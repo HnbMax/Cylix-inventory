@@ -102,7 +102,7 @@
   .cab-card:hover{ border-color: var(--teal); }
   .cab-card.has-alert{ border-color: var(--danger); }
   .cab-card .icon{ width: 30px; height: 24px; background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 4px, #14171c 4px, #14171c 8px); border-radius: 4px; margin-bottom: 12px; }
-  .cab-card .loc-photo{ width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 12px; background: var(--panel-2); }
+  .cab-card .loc-photo{ width: 100%; height: 110px; object-fit: contain; border-radius: 6px; margin-bottom: 12px; background: var(--panel-2); padding: 6px; }
   .cab-card .cab-name{ font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; padding-right: 44px; }
   .cab-card .cab-desc{ font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; min-height: 1em; }
   .cab-card .cab-meta{ font-size: 0.78rem; color: var(--muted); display:flex; justify-content: space-between; align-items:center; }
@@ -297,6 +297,9 @@
 <div class="modal-bg" id="addCategoryBg">
   <div class="modal">
     <h3 id="categoryModalTitle">Créer une catégorie</h3>
+    <label>Photo (optionnel)</label>
+    <input id="g_photo" type="file" accept="image/*" />
+    <img id="g_photo_preview" style="display:none; max-width:100%; max-height:120px; margin-top:8px; border-radius:6px;" />
     <label>Nom de la catégorie</label>
     <input id="g_name" placeholder="Ex: Électricité, Visserie, Mécanique…" />
     <label>Description (optionnel)</label>
@@ -613,13 +616,16 @@ function renderHome(){
     const catCabinetIds = catCabinets.map(c => c.id);
     const catProducts = products.filter(p => catCabinetIds.includes(p.cabinetId));
     const lowCount = catProducts.filter(isUnaddressedLow).length;
+    const photoHtml = cat.photo
+      ? `<img class="loc-photo" src="${cat.photo}" alt="" />`
+      : `<div class="icon"></div>`;
     const card = document.createElement('div');
     card.className = 'cab-card' + (lowCount > 0 ? ' has-alert' : '');
     card.dataset.id = cat.id;
     card.innerHTML = `
       <button class="del" data-id="${cat.id}" title="Supprimer la catégorie">✕</button>
       <button class="edit" data-id="${cat.id}" title="Modifier">✎</button>
-      <div class="icon"></div>
+      ${photoHtml}
       <div class="cab-name">${escapeHtml(cat.name)}</div>
       <div class="cab-desc">${escapeHtml(cat.description || '')}</div>
       <div class="cab-meta">
@@ -672,11 +678,35 @@ document.getElementById('backToHomeBtn').addEventListener('click', () => {
 
 /* ---- Catégorie CRUD ---- */
 let pendingCategoryEditId = null;
+let pendingCatPhotoDataUrl = null;
+let existingCatPhotoOnEdit = null;
+
+document.getElementById('g_photo').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    pendingCatPhotoDataUrl = await resizeImageFile(file);
+    const preview = document.getElementById('g_photo_preview');
+    preview.src = pendingCatPhotoDataUrl;
+    preview.style.display = 'block';
+  }catch(err){
+    console.error(err);
+    showToast("Impossible de traiter cette photo");
+  }
+});
+
+function resetCategoryForm(){
+  document.getElementById('g_name').value = '';
+  document.getElementById('g_desc').value = '';
+  document.getElementById('g_photo').value = '';
+  document.getElementById('g_photo_preview').style.display = 'none';
+  pendingCatPhotoDataUrl = null;
+  existingCatPhotoOnEdit = null;
+}
 
 document.getElementById('openAddCategoryBtn').addEventListener('click', () => {
   pendingCategoryEditId = null;
-  document.getElementById('g_name').value = '';
-  document.getElementById('g_desc').value = '';
+  resetCategoryForm();
   document.getElementById('categoryModalTitle').textContent = 'Créer une catégorie';
   document.getElementById('confirmAddCategory').textContent = 'Créer';
   document.getElementById('addCategoryBg').classList.add('show');
@@ -686,8 +716,15 @@ function openEditCategoryModal(id){
   const cat = categories.find(c => c.id === id);
   if(!cat) return;
   pendingCategoryEditId = id;
+  resetCategoryForm();
   document.getElementById('g_name').value = cat.name || '';
   document.getElementById('g_desc').value = cat.description || '';
+  if(cat.photo){
+    existingCatPhotoOnEdit = cat.photo;
+    const preview = document.getElementById('g_photo_preview');
+    preview.src = cat.photo;
+    preview.style.display = 'block';
+  }
   document.getElementById('categoryModalTitle').textContent = 'Modifier la catégorie';
   document.getElementById('confirmAddCategory').textContent = 'Enregistrer';
   document.getElementById('addCategoryBg').classList.add('show');
@@ -702,18 +739,20 @@ document.getElementById('confirmAddCategory').addEventListener('click', async ()
   const name = document.getElementById('g_name').value.trim();
   if(!name){ showToast('Le nom de la catégorie est requis'); return; }
   const description = document.getElementById('g_desc').value.trim();
+  const finalPhoto = pendingCatPhotoDataUrl || existingCatPhotoOnEdit || null;
   document.getElementById('addCategoryBg').classList.remove('show');
 
   if(pendingCategoryEditId){
     const cat = categories.find(c => c.id === pendingCategoryEditId);
-    if(cat){ cat.name = name; cat.description = description; }
+    if(cat){ cat.name = name; cat.description = description; cat.photo = finalPhoto; }
     renderAll();
     await saveCategories();
     showToast(`Catégorie "${name}" mise à jour`);
   } else {
     const newCat = {
       id: 'catg_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-      name, description
+      name, description,
+      photo: finalPhoto
     };
     categories.push(newCat);
     renderAll();
@@ -721,6 +760,8 @@ document.getElementById('confirmAddCategory').addEventListener('click', async ()
     showToast(`Catégorie "${newCat.name}" créée`);
   }
   pendingCategoryEditId = null;
+  pendingCatPhotoDataUrl = null;
+  existingCatPhotoOnEdit = null;
 });
 
 let pendingDeleteCategoryId = null;
