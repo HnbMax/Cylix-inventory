@@ -64,6 +64,31 @@
   button{ font-family: inherit; cursor:pointer; border:none; }
   .btn-add{ background: var(--teal); color: #eafaf8; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
   .btn-add:hover{ background: #468f8a; }
+  .view-toggle{ display:flex; border: 1px solid var(--line); border-radius: 6px; overflow:hidden; }
+  .view-btn{ background: var(--panel); color: var(--muted); padding: 7px 11px; font-size: 0.95rem; line-height:1; }
+  .view-btn.active{ background: var(--panel-2); color: var(--paper); }
+  .view-btn:hover{ color: var(--paper); }
+
+  /* Product photo */
+  .card .photo{ width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; background: var(--panel-2); }
+  .card .photo-placeholder{ width: 100%; height: 110px; border-radius: 6px; margin-bottom: 10px; background: var(--panel-2); display:flex; align-items:center; justify-content:center; color: var(--muted); font-size: 0.7rem; }
+
+  /* Compact list view */
+  .list-view{ margin-bottom: 30px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .list-row{ display:flex; align-items:center; gap: 12px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .list-row:last-child{ border-bottom: none; }
+  .list-row.low{ background: #2a1d1a; }
+  .list-row .thumb{ width: 38px; height: 38px; border-radius: 6px; object-fit: cover; flex-shrink:0; background: var(--panel-2); }
+  .list-row .thumb-placeholder{ width: 38px; height: 38px; border-radius: 6px; flex-shrink:0; background: var(--panel-2); }
+  .list-row .info{ flex: 1; min-width: 0; }
+  .list-row .info .n{ font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-row .info .c{ font-size: 0.7rem; color: var(--muted); }
+  .list-row .q{ font-family: "Consolas", monospace; font-weight: 700; font-size: 1.1rem; min-width: 60px; text-align:right; }
+  .list-row.low .q{ color: var(--danger); }
+  .list-row .list-actions{ display:flex; gap: 6px; flex-shrink:0; }
+  .list-row .list-actions button{ padding: 6px 9px; border-radius: 6px; font-size: 0.85rem; font-weight:600; }
+  .list-row .list-link{ display:flex; align-items:center; justify-content:center; padding: 6px 8px; border-radius: 6px; font-size: 0.9rem; text-decoration:none; }
+  .list-row .del{ position:static; }
 
   /* Cabinet grid (home) */
   .cab-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 30px; }
@@ -89,6 +114,8 @@
   .card.low .qty{ color: var(--danger); }
   .card .unit{ font-size: 0.8rem; color: var(--muted); }
   .card .threshold{ font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; }
+  .card .product-link{ display:inline-block; font-size: 0.75rem; color: var(--amber); text-decoration:none; margin-bottom: 12px; }
+  .card .product-link:hover{ text-decoration: underline; }
   .card .actions{ display:flex; gap: 8px; }
   .card .actions button{ flex:1; padding: 8px 6px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
   .btn-take{ background: var(--panel-2); color: var(--paper); border: 1px solid var(--line) !important; }
@@ -209,10 +236,17 @@
 
     <div class="controls">
       <h2 id="productCount">Chargement…</h2>
-      <button class="btn-add" id="openAddBtn">+ Ajouter un produit</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <div class="view-toggle" id="viewToggle">
+          <button class="view-btn active" data-view="cards" title="Vue cartes">▦</button>
+          <button class="view-btn" data-view="list" title="Vue liste">☰</button>
+        </div>
+        <button class="btn-add" id="openAddBtn">+ Ajouter un produit</button>
+      </div>
     </div>
 
     <div class="grid" id="grid"></div>
+    <div class="list-view" id="listView" style="display:none;"></div>
     <div class="empty" id="emptyState" style="display:none;">Aucun produit dans cette armoire pour l'instant. Ajoutez-en un pour démarrer l'inventaire.</div>
 
     <details class="history">
@@ -274,6 +308,9 @@
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3>Ajouter un produit</h3>
+    <label>Photo (optionnel)</label>
+    <input id="f_photo" type="file" accept="image/*" />
+    <img id="f_photo_preview" style="display:none; max-width:100%; max-height:120px; margin-top:8px; border-radius:6px;" />
     <label>Nom du produit</label>
     <input id="f_name" placeholder="Ex: Bombe aérosol dégraissant" />
     <label>Catégorie (optionnel)</label>
@@ -290,6 +327,8 @@
     </div>
     <label>Seuil d'alerte (recommander en dessous de)</label>
     <input id="f_threshold" type="number" min="0" value="2" />
+    <label>Lien du produit (optionnel)</label>
+    <input id="f_url" type="url" placeholder="https://…" />
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelAdd">Annuler</button>
       <button class="btn-save" id="confirmAdd">Ajouter</button>
@@ -483,8 +522,10 @@ function renderCabinet(){
   const cabProducts = products.filter(p => p.cabinetId === currentCabinetId);
 
   const grid = document.getElementById('grid');
+  const listView = document.getElementById('listView');
   const empty = document.getElementById('emptyState');
   grid.innerHTML = '';
+  listView.innerHTML = '';
   empty.style.display = cabProducts.length === 0 ? 'block' : 'none';
 
   const low = cabProducts.filter(p => p.quantity <= p.threshold);
@@ -499,22 +540,53 @@ function renderCabinet(){
 
   document.getElementById('productCount').textContent = cabProducts.length + ' produit' + (cabProducts.length !== 1 ? 's' : '') + ' référencé' + (cabProducts.length !== 1 ? 's' : '');
 
+  const isListMode = currentViewMode === 'list';
+  grid.style.display = isListMode ? 'none' : 'grid';
+  listView.style.display = isListMode ? 'block' : 'none';
+  document.querySelectorAll('#viewToggle .view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentViewMode));
+
   cabProducts.forEach(p => {
     const isLow = p.quantity <= p.threshold;
+    const photoHtml = p.photo
+      ? `<img class="photo" src="${p.photo}" alt="" />`
+      : `<div class="photo-placeholder">Pas de photo</div>`;
     const card = document.createElement('div');
     card.className = 'card' + (isLow ? ' low' : '');
     card.innerHTML = `
       <button class="del" data-id="${p.id}" title="Supprimer">✕</button>
+      ${photoHtml}
       ${p.category ? `<div class="cat">${escapeHtml(p.category)}</div>` : ''}
       <div class="name">${escapeHtml(p.name)}</div>
       <div class="qty-row"><span class="qty">${p.quantity}</span><span class="unit">${escapeHtml(p.unit)}</span></div>
       <div class="threshold">Seuil d'alerte : ${p.threshold} ${escapeHtml(p.unit)}</div>
+      ${p.url ? `<a class="product-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">Voir le produit ↗</a>` : ''}
       <div class="actions">
         <button class="btn-take" data-id="${p.id}" data-act="take">− Prendre 1</button>
         <button class="btn-restock" data-id="${p.id}" data-act="restock">+ Réappro.</button>
       </div>
     `;
     grid.appendChild(card);
+
+    const thumbHtml = p.photo
+      ? `<img class="thumb" src="${p.photo}" alt="" />`
+      : `<div class="thumb-placeholder"></div>`;
+    const row = document.createElement('div');
+    row.className = 'list-row' + (isLow ? ' low' : '');
+    row.innerHTML = `
+      ${thumbHtml}
+      <div class="info">
+        <div class="n">${escapeHtml(p.name)}</div>
+        <div class="c">${p.category ? escapeHtml(p.category) + ' — ' : ''}seuil ${p.threshold} ${escapeHtml(p.unit)}</div>
+      </div>
+      <div class="q">${p.quantity} <span style="font-size:0.65rem; color:var(--muted); font-weight:400;">${escapeHtml(p.unit)}</span></div>
+      <div class="list-actions">
+        ${p.url ? `<a class="list-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer" title="Voir le produit">🔗</a>` : ''}
+        <button class="btn-take" data-id="${p.id}" data-act="take" title="Prendre 1">−1</button>
+        <button class="btn-restock" data-id="${p.id}" data-act="restock" title="Réapprovisionner">+</button>
+        <button class="del" data-id="${p.id}" title="Supprimer">✕</button>
+      </div>
+    `;
+    listView.appendChild(row);
   });
 
   const cabLog = log.filter(entry => entry.cabinetId === currentCabinetId);
@@ -530,6 +602,28 @@ function renderCabinet(){
     `).join('');
   }
 }
+
+/* ---- Bascule vue cartes / liste ---- */
+let currentViewMode = 'cards';
+try{ currentViewMode = localStorage.getItem('inventaire_view_mode') || 'cards'; }catch(e){ /* ignore */ }
+
+document.getElementById('viewToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.view-btn');
+  if(!btn) return;
+  currentViewMode = btn.dataset.view;
+  try{ localStorage.setItem('inventaire_view_mode', currentViewMode); }catch(e){ /* ignore */ }
+  document.querySelectorAll('#viewToggle .view-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderCabinet();
+});
+
+document.getElementById('listView').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.classList.contains('del')) deleteProduct(id);
+  else if(btn.dataset.act === 'take') takeOne(id);
+  else if(btn.dataset.act === 'restock') restock(id);
+});
 
 /* ---- Navigation ---- */
 document.getElementById('backBtn').addEventListener('click', () => {
@@ -684,12 +778,54 @@ document.getElementById('grid').addEventListener('click', (e) => {
   else if(btn.dataset.act === 'restock') restock(id);
 });
 
+let pendingPhotoDataUrl = null;
+
+function resizeImageFile(file, maxSize = 480, quality = 0.7){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image invalide'));
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height && width > maxSize){ height = Math.round(height * maxSize / width); width = maxSize; }
+        else if(height > maxSize){ width = Math.round(width * maxSize / height); height = maxSize; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('f_photo').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    pendingPhotoDataUrl = await resizeImageFile(file);
+    const preview = document.getElementById('f_photo_preview');
+    preview.src = pendingPhotoDataUrl;
+    preview.style.display = 'block';
+  }catch(err){
+    console.error(err);
+    showToast("Impossible de traiter cette photo");
+  }
+});
+
 document.getElementById('openAddBtn').addEventListener('click', () => {
   document.getElementById('f_name').value = '';
   document.getElementById('f_cat').value = '';
   document.getElementById('f_qty').value = 0;
   document.getElementById('f_unit').value = 'pièces';
   document.getElementById('f_threshold').value = 2;
+  document.getElementById('f_url').value = '';
+  document.getElementById('f_photo').value = '';
+  document.getElementById('f_photo_preview').style.display = 'none';
+  pendingPhotoDataUrl = null;
   document.getElementById('modalBg').classList.add('show');
 });
 document.getElementById('cancelAdd').addEventListener('click', () => {
@@ -705,7 +841,9 @@ document.getElementById('confirmAdd').addEventListener('click', async () => {
     category: document.getElementById('f_cat').value.trim(),
     quantity: parseInt(document.getElementById('f_qty').value, 10) || 0,
     unit: document.getElementById('f_unit').value.trim() || 'pièces',
-    threshold: parseInt(document.getElementById('f_threshold').value, 10) || 0
+    threshold: parseInt(document.getElementById('f_threshold').value, 10) || 0,
+    url: document.getElementById('f_url').value.trim(),
+    photo: pendingPhotoDataUrl || null
   };
   products.push(newP);
   document.getElementById('modalBg').classList.remove('show');
@@ -714,6 +852,7 @@ document.getElementById('confirmAdd').addEventListener('click', async () => {
   addLogEntry(newP.cabinetId, 'a ajouté', newP.name, newP.quantity);
   renderAll();
   showToast(`"${newP.name}" ajouté à l'inventaire`);
+  pendingPhotoDataUrl = null;
 });
 
 document.getElementById('userName').addEventListener('change', saveUserName);
