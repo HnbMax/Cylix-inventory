@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventaire — Armoires produits dangereux</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#14171c" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Inventaire Cilyx" />
+<link rel="apple-touch-icon" href="icon-apple-touch.png" />
+<link rel="icon" href="icon-192.png" />
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --bg: #14171c;
+    --panel: #1d2128;
+    --panel-2: #242933;
+    --paper: #f2efe7;
+    --ink: #1d2128;
+    --amber: #e0a526;
+    --amber-dim: #7a5c1c;
+    --teal: #3c7c78;
+    --danger: #c1503c;
+    --line: #343b46;
+    --muted: #8a92a0;
+    font-size: 16px;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: var(--bg); color: var(--paper); font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .wrap{ max-width: 920px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  /* Header */
+  header{ display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding: 6px 0 18px; border-bottom: 2px solid var(--line); margin-bottom: 20px; flex-wrap: wrap;}
+  .title-row{ display:flex; align-items:center; gap: 14px; }
+  .logo-badge{ background: #ffffff; border-radius: 8px; padding: 6px 10px; display:flex; align-items:center; flex-shrink:0; }
+  .logo-badge img{ height: 30px; width:auto; display:block; }
+  .title-block h1{ font-size: 1.5rem; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em;}
+  .title-block p{ margin:0; color: var(--muted); font-size: 0.88rem; }
+  .hazard-tag{ display:inline-block; width:14px; height:14px; background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 4px, #14171c 4px, #14171c 8px); border-radius: 3px; margin-right:8px; vertical-align: -2px;}
+  .who{ display:flex; align-items:center; gap:8px; }
+  .who input{ background: var(--panel-2); border: 1px solid var(--line); color: var(--paper); padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; width: 140px; }
+  .who label{ font-size: 0.75rem; color: var(--muted); }
+
+  /* Breadcrumb / back */
+  .back-row{ display:flex; align-items:center; gap: 10px; margin-bottom: 16px; }
+  .back-btn{ background: var(--panel-2); color: var(--paper); border: 1px solid var(--line) !important; padding: 7px 12px; border-radius: 6px; font-size: 0.82rem; }
+  .back-btn:hover{ background: #2c323d; }
+  .crumb-title{ font-size: 1.1rem; font-weight: 700; }
+
+  /* Alert banner */
+  .alert-banner{ background: linear-gradient(90deg, var(--danger), #a5432f); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; display:none; }
+  .alert-banner.show{ display:block; }
+  .alert-banner .head{ font-weight:700; font-size:0.95rem; margin-bottom:6px; }
+  .alert-banner ul{ margin:0; padding-left: 18px; font-size: 0.85rem; }
+  .alert-banner li{ margin: 2px 0; }
+
+  /* Controls row */
+  .controls{ display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; gap: 10px; flex-wrap: wrap;}
+  .controls h2{ font-size: 0.85rem; text-transform: none; color: var(--muted); margin:0; font-weight: 600;}
+  button{ font-family: inherit; cursor:pointer; border:none; }
+  .btn-add{ background: var(--teal); color: #eafaf8; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+  .btn-add:hover{ background: #468f8a; }
+
+  /* Cabinet grid (home) */
+  .cab-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 30px; }
+  .cab-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; cursor: pointer; position: relative; transition: border-color 0.15s; text-align: left; }
+  .cab-card:hover{ border-color: var(--teal); }
+  .cab-card.has-alert{ border-color: var(--danger); }
+  .cab-card .icon{ width: 30px; height: 24px; background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 4px, #14171c 4px, #14171c 8px); border-radius: 4px; margin-bottom: 12px; }
+  .cab-card .cab-name{ font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; padding-right: 20px; }
+  .cab-card .cab-desc{ font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; min-height: 1em; }
+  .cab-card .cab-meta{ font-size: 0.78rem; color: var(--muted); display:flex; justify-content: space-between; align-items:center; }
+  .cab-card .cab-meta .warn{ color: var(--danger); font-weight: 600; }
+  .cab-card .del{ position:absolute; top: 12px; right: 12px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; z-index: 2;}
+  .cab-card .del:hover{ color: var(--danger); }
+
+  /* Product grid */
+  .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 30px; }
+  .card{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; position: relative; }
+  .card.low{ border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger) inset; }
+  .card .cat{ font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
+  .card .name{ font-size: 1.02rem; font-weight: 600; margin-bottom: 10px; line-height: 1.25; padding-right: 20px;}
+  .card .qty-row{ display:flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .card .qty{ font-family: "Consolas", "SF Mono", monospace; font-size: 2.1rem; font-weight: 700; line-height: 1; }
+  .card.low .qty{ color: var(--danger); }
+  .card .unit{ font-size: 0.8rem; color: var(--muted); }
+  .card .threshold{ font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; }
+  .card .actions{ display:flex; gap: 8px; }
+  .card .actions button{ flex:1; padding: 8px 6px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+  .btn-take{ background: var(--panel-2); color: var(--paper); border: 1px solid var(--line) !important; }
+  .btn-take:hover{ background: #2c323d; }
+  .btn-restock{ background: var(--amber-dim); color: #ffe9b8; }
+  .btn-restock:hover{ background: #8f6c22; }
+  .card .del{ position:absolute; top: 10px; right: 10px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; }
+  .card .del:hover{ color: var(--danger); }
+
+  /* Empty state */
+  .empty{ text-align:center; color: var(--muted); padding: 40px 10px; font-size: 0.9rem; border: 1px dashed var(--line); border-radius: 10px; }
+
+  /* History */
+  .history{ border-top: 1px solid var(--line); padding-top: 16px; }
+  .history summary{ cursor:pointer; font-size: 0.85rem; color: var(--muted); margin-bottom: 10px; }
+  .log-item{ display:flex; justify-content:space-between; gap:10px; font-size: 0.78rem; padding: 6px 0; border-bottom: 1px solid #262b34; color: #c7cdd6;}
+  .log-item .when{ color: var(--muted); white-space: nowrap; }
+
+  /* Modal */
+  .modal-bg{ position: fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding: 20px; z-index: 10;}
+  .modal-bg.show{ display:flex; }
+  .modal{ background: var(--paper); color: var(--ink); border-radius: 10px; padding: 20px; width: 100%; max-width: 360px; }
+  .modal h3{ margin: 0 0 14px; font-size: 1.05rem; }
+  .modal label{ display:block; font-size: 0.75rem; color: #555; margin: 10px 0 4px; }
+  .modal input, .modal select{ width:100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc4b4; font-size: 0.9rem; font-family: inherit; }
+  .modal .row2{ display:flex; gap: 10px; }
+  .modal .row2 > div{ flex:1; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap: 8px; margin-top: 18px; }
+  .modal-actions button{ padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight:600; }
+  .btn-cancel{ background: transparent; color: #555; }
+  .btn-save{ background: var(--teal); color: white; }
+
+  .status{ font-size: 0.72rem; color: var(--muted); text-align:center; margin-top: 24px; }
+  .setup-screen{ max-width: 560px; margin: 60px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px; }
+  .setup-screen h2{ margin-top:0; font-size: 1.2rem; }
+  .setup-screen p{ font-size: 0.88rem; color: #c7cdd6; line-height: 1.5; }
+  .setup-screen textarea{ width:100%; min-height: 120px; background: var(--panel-2); color: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-family: "Consolas", monospace; font-size: 0.82rem; margin: 10px 0; }
+  .setup-screen a{ color: var(--amber); }
+  .setup-screen .err{ color: var(--danger); font-size: 0.82rem; margin-top: 8px; }
+  .login-screen{ max-width: 360px; margin: 80px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px; text-align:center; }
+  .login-screen img{ height: 34px; margin-bottom: 18px; }
+  .login-screen h2{ font-size: 1.1rem; margin: 0 0 18px; }
+  .login-screen input{ width:100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--paper); padding: 10px 12px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 10px; }
+  .login-screen button{ width:100%; background: var(--teal); color: white; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 0.9rem; }
+  .login-screen .err{ color: var(--danger); font-size: 0.8rem; margin-top: 10px; min-height: 1em; }
+  .logout-link{ background:none; color: var(--muted); font-size: 0.75rem; text-decoration: underline; padding: 0; }
+  .toast{ position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; opacity:0; pointer-events:none; transition: opacity 0.2s; }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="setup-screen" id="setupScreen" style="display:none;">
+  <h2>Connecter l'inventaire à une base partagée</h2>
+  <p>Cette application a besoin d'une base de données gratuite (Firebase) pour que tous vos collègues voient les mêmes données. À faire une seule fois :</p>
+  <p>1. Allez sur <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>, connectez-vous avec un compte Google, cliquez sur "Ajouter un projet".<br>
+  2. Dans le projet, ouvrez "Realtime Database" dans le menu de gauche → "Créer une base de données" → démarrez en mode test (on verrouillera juste après).<br>
+  3. Ouvrez "Authentication" dans le menu de gauche → "Get started" → onglet "Sign-in method" → activez "Email/Password".<br>
+  4. Toujours dans Authentication, onglet "Users" → "Add user" → créez un compte (email + mot de passe) pour vous, puis un par collègue qui doit avoir accès.<br>
+  5. Retournez dans "Realtime Database" → onglet "Règles", et collez : <code>{"rules": {".read": "auth != null", ".write": "auth != null"}}</code> puis "Publier". Cela empêche tout accès sans identifiants valides.<br>
+  6. Dans les paramètres du projet (⚙️) → "Général" → "Vos applications" → icône Web (&lt;/&gt;) → enregistrez une application, copiez l'objet <code>firebaseConfig</code> et collez-le ci-dessous.</p>
+  <textarea id="configInput" placeholder='{"apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", ...}'></textarea>
+  <button class="btn-add" id="saveConfigBtn">Connecter</button>
+  <div class="err" id="configErr"></div>
+</div>
+
+<div class="login-screen" id="loginScreen" style="display:none;">
+  <img src="logo.png" alt="Cilyx" />
+  <h2>Connexion à l'inventaire</h2>
+  <input id="loginEmail" type="email" placeholder="Votre email professionnel" />
+  <input id="loginPassword" type="password" placeholder="Mot de passe" />
+  <button id="loginBtn">Se connecter</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
+
+  <header>
+    <div class="title-row">
+      <div class="logo-badge">
+        <img src="logo.png" alt="Cilyx" />
+      </div>
+      <div class="title-block">
+        <h1><span class="hazard-tag"></span>Armoires produits dangereux</h1>
+        <p id="headerSub">Inventaire partagé — mis à jour à chaque ouverture</p>
+      </div>
+    </div>
+    <div class="who">
+      <div>
+        <label>Vous êtes</label>
+        <input id="userName" placeholder="Votre prénom" />
+      </div>
+      <button class="logout-link" id="logoutBtn">Se déconnecter</button>
+    </div>
+  </header>
+
+  <!-- HOME VIEW: list of cabinets -->
+  <div id="homeView">
+    <div class="controls">
+      <h2 id="cabCount">Chargement…</h2>
+      <button class="btn-add" id="openAddCabinetBtn">+ Ajouter une armoire</button>
+    </div>
+    <div class="cab-grid" id="cabGrid"></div>
+    <div class="empty" id="emptyCabState" style="display:none;">Aucune armoire pour l'instant. Créez-en une pour commencer.</div>
+  </div>
+
+  <!-- CABINET VIEW: products of one cabinet -->
+  <div id="cabinetView" style="display:none;">
+    <div class="back-row">
+      <button class="back-btn" id="backBtn">← Toutes les armoires</button>
+      <span class="crumb-title" id="cabinetTitle"></span>
+    </div>
+
+    <div class="alert-banner" id="alertBanner">
+      <div class="head">⚠ Stock bas — à recommander</div>
+      <ul id="alertList"></ul>
+    </div>
+
+    <div class="controls">
+      <h2 id="productCount">Chargement…</h2>
+      <button class="btn-add" id="openAddBtn">+ Ajouter un produit</button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="emptyState" style="display:none;">Aucun produit dans cette armoire pour l'instant. Ajoutez-en un pour démarrer l'inventaire.</div>
+
+    <details class="history">
+      <summary>Historique des mouvements de cette armoire</summary>
+      <div id="logList"></div>
+    </details>
+  </div>
+
+  <div class="status" id="statusLine"></div>
+</div>
+
+<div class="modal-bg" id="addCabinetBg">
+  <div class="modal">
+    <h3>Créer une armoire</h3>
+    <label>Nom de l'armoire</label>
+    <input id="c_name" placeholder="Ex: Armoire produits inflammables" />
+    <label>Description (optionnel)</label>
+    <input id="c_desc" placeholder="Ex: Atelier — zone A" />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelAddCabinet">Annuler</button>
+      <button class="btn-save" id="confirmAddCabinet">Créer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirmDeleteCabinetBg">
+  <div class="modal">
+    <h3 id="deleteCabinetTitle">Supprimer cette armoire ?</h3>
+    <p id="deleteCabinetWarning" style="font-size:0.85rem; color:#555; margin-top:-6px;"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelDeleteCabinet">Annuler</button>
+      <button class="btn-save" id="confirmDeleteCabinet" style="background: var(--danger);">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="restockBg">
+  <div class="modal">
+    <h3 id="restockTitle">Réapprovisionner</h3>
+    <label>Quantité à ajouter</label>
+    <input id="r_qty" type="number" min="1" value="1" />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelRestock">Annuler</button>
+      <button class="btn-save" id="confirmRestock">Ajouter au stock</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirmDeleteBg">
+  <div class="modal">
+    <h3 id="deleteTitle">Supprimer ce produit ?</h3>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelDelete">Annuler</button>
+      <button class="btn-save" id="confirmDelete" style="background: var(--danger);">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Ajouter un produit</h3>
+    <label>Nom du produit</label>
+    <input id="f_name" placeholder="Ex: Bombe aérosol dégraissant" />
+    <label>Catégorie (optionnel)</label>
+    <input id="f_cat" placeholder="Ex: Aérosols, Solvants…" />
+    <div class="row2">
+      <div>
+        <label>Quantité actuelle</label>
+        <input id="f_qty" type="number" min="0" value="0" />
+      </div>
+      <div>
+        <label>Unité</label>
+        <input id="f_unit" placeholder="pièces, L, kg…" value="pièces" />
+      </div>
+    </div>
+    <label>Seuil d'alerte (recommander en dessous de)</label>
+    <input id="f_threshold" type="number" min="0" value="2" />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelAdd">Annuler</button>
+      <button class="btn-save" id="confirmAdd">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let cabinets = [];
+let products = [];
+let log = [];
+let currentCabinetId = null; // null = home view
+let db = null;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+function getUser(){
+  const v = document.getElementById('userName').value.trim();
+  return v || 'Anonyme';
+}
+
+function loadUserName(){
+  try{
+    const v = localStorage.getItem('inventaire_username');
+    if(v) document.getElementById('userName').value = v;
+  }catch(e){ /* localStorage indisponible */ }
+}
+
+function saveUserName(){
+  const v = document.getElementById('userName').value.trim();
+  if(!v) return;
+  try{ localStorage.setItem('inventaire_username', v); }catch(e){ /* ignore */ }
+}
+
+/* ---- Connexion Firebase ---- */
+let auth = null;
+
+function initFirebase(config){
+  try{
+    firebase.initializeApp(config);
+    db = firebase.database();
+    auth = firebase.auth();
+    document.getElementById('setupScreen').style.display = 'none';
+
+    auth.onAuthStateChanged(user => {
+      if(user){
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appRoot').style.display = 'block';
+        document.getElementById('statusLine').textContent = 'Connecté — synchronisation en temps réel avec vos collègues';
+        attachListeners();
+      } else {
+        document.getElementById('appRoot').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'block';
+      }
+    });
+  }catch(e){
+    console.error(e);
+    document.getElementById('configErr').textContent = 'Configuration invalide : ' + e.message;
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent = 'Email et mot de passe requis.'; return; }
+  auth.signInWithEmailAndPassword(email, pass).catch(e => {
+    errEl.textContent = "Connexion refusée. Vérifiez l'email et le mot de passe, ou contactez la personne qui gère les accès.";
+    console.error(e);
+  });
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  if(auth) auth.signOut();
+});
+
+function attachListeners(){
+  db.ref('cabinets').on('value', snap => {
+    cabinets = snap.val() || [];
+    renderAll();
+  });
+  db.ref('products').on('value', snap => {
+    products = snap.val() || [];
+    renderAll();
+  });
+  db.ref('log').on('value', snap => {
+    log = snap.val() || [];
+    renderAll();
+  });
+}
+
+async function saveCabinets(){
+  try{ await db.ref('cabinets').set(cabinets); }
+  catch(e){ console.error(e); showToast('Erreur de sauvegarde'); }
+}
+
+async function saveProducts(){
+  try{ await db.ref('products').set(products); }
+  catch(e){ console.error(e); showToast('Erreur de sauvegarde'); }
+}
+
+async function saveLog(){
+  try{ await db.ref('log').set(log.slice(0,300)); }
+  catch(e){ console.error(e); }
+}
+
+document.getElementById('saveConfigBtn').addEventListener('click', () => {
+  const raw = document.getElementById('configInput').value.trim();
+  document.getElementById('configErr').textContent = '';
+  let config;
+  try{ config = JSON.parse(raw); }
+  catch(e){ document.getElementById('configErr').textContent = "Impossible de lire cette configuration, vérifiez le collage."; return; }
+  try{ localStorage.setItem('inventaire_firebase_config', raw); }catch(e){ /* ignore */ }
+  initFirebase(config);
+});
+
+function addLogEntry(cabinetId, action, productName, delta){
+  log.unshift({
+    ts: new Date().toISOString(),
+    user: getUser(),
+    cabinetId, action, productName, delta
+  });
+  saveLog();
+}
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-BE', {day:'2-digit', month:'2-digit'}) + ' ' + d.toLocaleTimeString('fr-BE', {hour:'2-digit', minute:'2-digit'});
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+function renderAll(){
+  if(currentCabinetId === null){
+    document.getElementById('homeView').style.display = 'block';
+    document.getElementById('cabinetView').style.display = 'none';
+    document.getElementById('headerSub').textContent = 'Inventaire partagé — mis à jour à chaque ouverture';
+    renderHome();
+  } else {
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('cabinetView').style.display = 'block';
+    const cab = cabinets.find(c => c.id === currentCabinetId);
+    document.getElementById('headerSub').textContent = cab ? (cab.description || 'Détail de l\'armoire') : '';
+    renderCabinet();
+  }
+}
+
+function renderHome(){
+  const grid = document.getElementById('cabGrid');
+  const empty = document.getElementById('emptyCabState');
+  grid.innerHTML = '';
+  empty.style.display = cabinets.length === 0 ? 'block' : 'none';
+  document.getElementById('cabCount').textContent = cabinets.length + ' armoire' + (cabinets.length !== 1 ? 's' : '');
+
+  cabinets.forEach(cab => {
+    const cabProducts = products.filter(p => p.cabinetId === cab.id);
+    const lowCount = cabProducts.filter(p => p.quantity <= p.threshold).length;
+    const card = document.createElement('div');
+    card.className = 'cab-card' + (lowCount > 0 ? ' has-alert' : '');
+    card.dataset.id = cab.id;
+    card.innerHTML = `
+      <button class="del" data-id="${cab.id}" title="Supprimer l'armoire">✕</button>
+      <div class="icon"></div>
+      <div class="cab-name">${escapeHtml(cab.name)}</div>
+      <div class="cab-desc">${escapeHtml(cab.description || '')}</div>
+      <div class="cab-meta">
+        <span>${cabProducts.length} produit${cabProducts.length !== 1 ? 's' : ''}</span>
+        ${lowCount > 0 ? `<span class="warn">⚠ ${lowCount} à recommander</span>` : '<span>Stock ok</span>'}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function renderCabinet(){
+  const cab = cabinets.find(c => c.id === currentCabinetId);
+  document.getElementById('cabinetTitle').textContent = cab ? cab.name : '';
+
+  const cabProducts = products.filter(p => p.cabinetId === currentCabinetId);
+
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  grid.innerHTML = '';
+  empty.style.display = cabProducts.length === 0 ? 'block' : 'none';
+
+  const low = cabProducts.filter(p => p.quantity <= p.threshold);
+  const banner = document.getElementById('alertBanner');
+  const alertList = document.getElementById('alertList');
+  if(low.length > 0){
+    banner.classList.add('show');
+    alertList.innerHTML = low.map(p => `<li>${escapeHtml(p.name)} — reste ${p.quantity} ${escapeHtml(p.unit)} (seuil ${p.threshold})</li>`).join('');
+  } else {
+    banner.classList.remove('show');
+  }
+
+  document.getElementById('productCount').textContent = cabProducts.length + ' produit' + (cabProducts.length !== 1 ? 's' : '') + ' référencé' + (cabProducts.length !== 1 ? 's' : '');
+
+  cabProducts.forEach(p => {
+    const isLow = p.quantity <= p.threshold;
+    const card = document.createElement('div');
+    card.className = 'card' + (isLow ? ' low' : '');
+    card.innerHTML = `
+      <button class="del" data-id="${p.id}" title="Supprimer">✕</button>
+      ${p.category ? `<div class="cat">${escapeHtml(p.category)}</div>` : ''}
+      <div class="name">${escapeHtml(p.name)}</div>
+      <div class="qty-row"><span class="qty">${p.quantity}</span><span class="unit">${escapeHtml(p.unit)}</span></div>
+      <div class="threshold">Seuil d'alerte : ${p.threshold} ${escapeHtml(p.unit)}</div>
+      <div class="actions">
+        <button class="btn-take" data-id="${p.id}" data-act="take">− Prendre 1</button>
+        <button class="btn-restock" data-id="${p.id}" data-act="restock">+ Réappro.</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  const cabLog = log.filter(entry => entry.cabinetId === currentCabinetId);
+  const logList = document.getElementById('logList');
+  if(cabLog.length === 0){
+    logList.innerHTML = '<div style="color:var(--muted); font-size:0.8rem;">Aucun mouvement enregistré.</div>';
+  } else {
+    logList.innerHTML = cabLog.slice(0, 40).map(entry => `
+      <div class="log-item">
+        <span>${escapeHtml(entry.user)} — ${escapeHtml(entry.action)} <strong>${escapeHtml(entry.productName)}</strong>${entry.delta ? ` (${entry.delta > 0 ? '+' : ''}${entry.delta})` : ''}</span>
+        <span class="when">${fmtDate(entry.ts)}</span>
+      </div>
+    `).join('');
+  }
+}
+
+/* ---- Navigation ---- */
+document.getElementById('backBtn').addEventListener('click', () => {
+  currentCabinetId = null;
+  renderAll();
+});
+
+document.getElementById('cabGrid').addEventListener('click', (e) => {
+  const delBtn = e.target.closest('.del');
+  if(delBtn){
+    openDeleteCabinetModal(delBtn.dataset.id);
+    return;
+  }
+  const card = e.target.closest('.cab-card');
+  if(card){
+    currentCabinetId = card.dataset.id;
+    renderAll();
+  }
+});
+
+/* ---- Cabinet CRUD ---- */
+document.getElementById('openAddCabinetBtn').addEventListener('click', () => {
+  document.getElementById('c_name').value = '';
+  document.getElementById('c_desc').value = '';
+  document.getElementById('addCabinetBg').classList.add('show');
+});
+document.getElementById('cancelAddCabinet').addEventListener('click', () => {
+  document.getElementById('addCabinetBg').classList.remove('show');
+});
+document.getElementById('confirmAddCabinet').addEventListener('click', async () => {
+  const name = document.getElementById('c_name').value.trim();
+  if(!name){ showToast('Le nom de l\'armoire est requis'); return; }
+  const newCab = {
+    id: 'cab_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    name,
+    description: document.getElementById('c_desc').value.trim()
+  };
+  cabinets.push(newCab);
+  document.getElementById('addCabinetBg').classList.remove('show');
+  renderAll();
+  await saveCabinets();
+  showToast(`Armoire "${newCab.name}" créée`);
+});
+
+let pendingDeleteCabinetId = null;
+function openDeleteCabinetModal(id){
+  const cab = cabinets.find(c => c.id === id);
+  if(!cab) return;
+  pendingDeleteCabinetId = id;
+  const count = products.filter(p => p.cabinetId === id).length;
+  document.getElementById('deleteCabinetTitle').textContent = `Supprimer "${cab.name}" ?`;
+  document.getElementById('deleteCabinetWarning').textContent = count > 0
+    ? `Cette armoire contient ${count} produit${count !== 1 ? 's' : ''}. Ils seront supprimés aussi.`
+    : `Cette armoire est vide.`;
+  document.getElementById('confirmDeleteCabinetBg').classList.add('show');
+}
+document.getElementById('cancelDeleteCabinet').addEventListener('click', () => {
+  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
+  pendingDeleteCabinetId = null;
+});
+document.getElementById('confirmDeleteCabinet').addEventListener('click', async () => {
+  const id = pendingDeleteCabinetId;
+  const cab = cabinets.find(c => c.id === id);
+  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
+  if(!cab) return;
+  cabinets = cabinets.filter(c => c.id !== id);
+  products = products.filter(p => p.cabinetId !== id);
+  renderAll();
+  await saveCabinets();
+  await saveProducts();
+  showToast(`Armoire "${cab.name}" supprimée`);
+  pendingDeleteCabinetId = null;
+});
+
+/* ---- Product actions ---- */
+async function takeOne(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  if(p.quantity <= 0){ showToast('Stock déjà à zéro'); return; }
+  p.quantity -= 1;
+  renderAll();
+  await saveProducts();
+  addLogEntry(p.cabinetId, 'a pris 1', p.name, -1);
+  renderAll();
+  showToast(`1 ${p.unit} de "${p.name}" retiré`);
+}
+
+let pendingRestockId = null;
+let pendingDeleteId = null;
+
+function restock(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  pendingRestockId = id;
+  document.getElementById('restockTitle').textContent = `Réapprovisionner "${p.name}"`;
+  document.getElementById('r_qty').value = 1;
+  document.getElementById('restockBg').classList.add('show');
+}
+
+document.getElementById('cancelRestock').addEventListener('click', () => {
+  document.getElementById('restockBg').classList.remove('show');
+  pendingRestockId = null;
+});
+
+document.getElementById('confirmRestock').addEventListener('click', async () => {
+  const id = pendingRestockId;
+  const p = products.find(x => x.id === id);
+  document.getElementById('restockBg').classList.remove('show');
+  if(!p) return;
+  const n = parseInt(document.getElementById('r_qty').value, 10);
+  if(isNaN(n) || n <= 0){ showToast('Quantité invalide'); return; }
+  p.quantity += n;
+  renderAll();
+  await saveProducts();
+  addLogEntry(p.cabinetId, 'a réapprovisionné', p.name, n);
+  renderAll();
+  showToast(`Stock de "${p.name}" mis à jour`);
+  pendingRestockId = null;
+});
+
+function deleteProduct(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteTitle').textContent = `Supprimer "${p.name}" ?`;
+  document.getElementById('confirmDeleteBg').classList.add('show');
+}
+
+document.getElementById('cancelDelete').addEventListener('click', () => {
+  document.getElementById('confirmDeleteBg').classList.remove('show');
+  pendingDeleteId = null;
+});
+
+document.getElementById('confirmDelete').addEventListener('click', async () => {
+  const id = pendingDeleteId;
+  const p = products.find(x => x.id === id);
+  document.getElementById('confirmDeleteBg').classList.remove('show');
+  if(!p) return;
+  products = products.filter(x => x.id !== id);
+  renderAll();
+  await saveProducts();
+  addLogEntry(p.cabinetId, 'a supprimé', p.name, null);
+  pendingDeleteId = null;
+});
+
+document.getElementById('grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.classList.contains('del')) deleteProduct(id);
+  else if(btn.dataset.act === 'take') takeOne(id);
+  else if(btn.dataset.act === 'restock') restock(id);
+});
+
+document.getElementById('openAddBtn').addEventListener('click', () => {
+  document.getElementById('f_name').value = '';
+  document.getElementById('f_cat').value = '';
+  document.getElementById('f_qty').value = 0;
+  document.getElementById('f_unit').value = 'pièces';
+  document.getElementById('f_threshold').value = 2;
+  document.getElementById('modalBg').classList.add('show');
+});
+document.getElementById('cancelAdd').addEventListener('click', () => {
+  document.getElementById('modalBg').classList.remove('show');
+});
+document.getElementById('confirmAdd').addEventListener('click', async () => {
+  const name = document.getElementById('f_name').value.trim();
+  if(!name){ showToast('Le nom du produit est requis'); return; }
+  const newP = {
+    id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    cabinetId: currentCabinetId,
+    name,
+    category: document.getElementById('f_cat').value.trim(),
+    quantity: parseInt(document.getElementById('f_qty').value, 10) || 0,
+    unit: document.getElementById('f_unit').value.trim() || 'pièces',
+    threshold: parseInt(document.getElementById('f_threshold').value, 10) || 0
+  };
+  products.push(newP);
+  document.getElementById('modalBg').classList.remove('show');
+  renderAll();
+  await saveProducts();
+  addLogEntry(newP.cabinetId, 'a ajouté', newP.name, newP.quantity);
+  renderAll();
+  showToast(`"${newP.name}" ajouté à l'inventaire`);
+});
+
+document.getElementById('userName').addEventListener('change', saveUserName);
+
+(function init(){
+  loadUserName();
+  let saved = null;
+  try{ saved = localStorage.getItem('inventaire_firebase_config'); }catch(e){ /* ignore */ }
+  if(saved){
+    try{
+      const config = JSON.parse(saved);
+      initFirebase(config);
+      return;
+    }catch(e){ /* config corrompue, on retombe sur l'écran de connexion */ }
+  }
+  document.getElementById('setupScreen').style.display = 'block';
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.error('SW registration failed', e));
+  });
+}
+</script>
+</body>
+</html>
