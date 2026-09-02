@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Inventaire — Armoires produits dangereux</title>
+<title>Inventaire — Cilyx</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#14171c" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -78,6 +78,7 @@
   .list-row{ display:flex; align-items:center; gap: 12px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
   .list-row:last-child{ border-bottom: none; }
   .list-row.low{ background: #2a1d1a; }
+  .list-row.ordered{ background: #2a2618; }
   .list-row .thumb{ width: 38px; height: 38px; border-radius: 6px; object-fit: contain; flex-shrink:0; background: var(--panel-2); padding: 2px; }
   .list-row .thumb-placeholder{ width: 38px; height: 38px; border-radius: 6px; flex-shrink:0; background: var(--panel-2); }
   .list-row .info{ flex: 1; min-width: 0; }
@@ -85,46 +86,57 @@
   .list-row .info .c{ font-size: 0.7rem; color: var(--muted); }
   .list-row .q{ font-family: "Consolas", monospace; font-weight: 700; font-size: 1.1rem; min-width: 60px; text-align:right; }
   .list-row.low .q{ color: var(--danger); }
+  .list-row.ordered .q{ color: var(--amber); }
   .list-row .list-actions{ display:flex; gap: 6px; flex-shrink:0; }
   .list-row .list-actions button{ padding: 6px 9px; border-radius: 6px; font-size: 0.85rem; font-weight:600; }
   .list-row .list-link{ display:flex; align-items:center; justify-content:center; padding: 6px 8px; border-radius: 6px; font-size: 0.9rem; text-decoration:none; }
   .list-row .edit{ background: var(--panel-2); color: var(--muted); border: 1px solid var(--line) !important; }
   .list-row .edit:hover{ color: var(--teal); }
   .list-row .del{ position:static; }
+  .list-row .ordered-toggle{ background: var(--panel-2); color: var(--muted); border: 1px solid var(--line) !important; }
+  .list-row .ordered-toggle.active{ background: var(--amber-dim); color: #ffe9b8; border-color: var(--amber-dim) !important; }
 
-  /* Cabinet grid (home) */
+  /* Cabinet grid (home / category / container listing) */
   .cab-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 30px; }
   .cab-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; cursor: pointer; position: relative; transition: border-color 0.15s; text-align: left; }
   .cab-card:hover{ border-color: var(--teal); }
   .cab-card.has-alert{ border-color: var(--danger); }
   .cab-card .icon{ width: 30px; height: 24px; background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 4px, #14171c 4px, #14171c 8px); border-radius: 4px; margin-bottom: 12px; }
-  .cab-card .cab-name{ font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; padding-right: 20px; }
+  .cab-card .loc-photo{ width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 12px; background: var(--panel-2); }
+  .cab-card .cab-name{ font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; padding-right: 44px; }
   .cab-card .cab-desc{ font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; min-height: 1em; }
   .cab-card .cab-meta{ font-size: 0.78rem; color: var(--muted); display:flex; justify-content: space-between; align-items:center; }
   .cab-card .cab-meta .warn{ color: var(--danger); font-weight: 600; }
   .cab-card .del{ position:absolute; top: 12px; right: 12px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; z-index: 2;}
   .cab-card .del:hover{ color: var(--danger); }
+  .cab-card .edit{ position:absolute; top: 12px; right: 36px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; z-index: 2;}
+  .cab-card .edit:hover{ color: var(--teal); }
 
   /* Product grid */
   .grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 30px; }
   .card{ background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; position: relative; }
   .card.low{ border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger) inset; }
+  .card.ordered{ border-color: var(--amber-dim); box-shadow: 0 0 0 1px var(--amber-dim) inset; }
   .card .cat{ font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
-  .card .name{ font-size: 1.02rem; font-weight: 600; margin-bottom: 10px; line-height: 1.25; padding-right: 20px;}
+  .card .name{ font-size: 1.02rem; font-weight: 600; margin-bottom: 10px; line-height: 1.25; padding-right: 44px;}
   .card .qty-row{ display:flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
   .card .qty{ font-family: "Consolas", "SF Mono", monospace; font-size: 2.1rem; font-weight: 700; line-height: 1; }
   .card.low .qty{ color: var(--danger); }
+  .card.ordered .qty{ color: var(--amber); }
   .card .unit{ font-size: 0.8rem; color: var(--muted); }
   .card .threshold{ font-size: 0.72rem; color: var(--muted); margin-bottom: 4px; }
   .card .price{ font-size: 0.78rem; color: var(--amber); font-weight: 600; margin-bottom: 10px; }
+  .card .ordered-tag{ display:inline-block; font-size: 0.7rem; color: #ffe9b8; background: var(--amber-dim); padding: 2px 8px; border-radius: 10px; margin-bottom: 10px; }
   .card .product-link{ display:inline-block; font-size: 0.75rem; color: var(--amber); text-decoration:none; margin-bottom: 12px; }
   .card .product-link:hover{ text-decoration: underline; }
-  .card .actions{ display:flex; gap: 8px; }
-  .card .actions button{ flex:1; padding: 8px 6px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+  .card .actions{ display:flex; gap: 8px; flex-wrap: wrap; }
+  .card .actions button{ flex:1; padding: 8px 6px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; min-width: 90px; }
   .btn-take{ background: var(--panel-2); color: var(--paper); border: 1px solid var(--line) !important; }
   .btn-take:hover{ background: #2c323d; }
   .btn-restock{ background: var(--amber-dim); color: #ffe9b8; }
   .btn-restock:hover{ background: #8f6c22; }
+  .btn-ordered{ background: var(--panel-2); color: var(--muted); border: 1px solid var(--line) !important; flex-basis: 100%; }
+  .btn-ordered.active{ background: var(--amber-dim); color: #ffe9b8; border-color: var(--amber-dim) !important; }
   .card .del{ position:absolute; top: 10px; right: 10px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; }
   .card .del:hover{ color: var(--danger); }
   .card .edit{ position:absolute; top: 10px; right: 34px; background:none; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; }
@@ -140,12 +152,12 @@
   .log-item .when{ color: var(--muted); white-space: nowrap; }
 
   /* Modal */
-  .modal-bg{ position: fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding: 20px; z-index: 10;}
+  .modal-bg{ position: fixed; inset:0; background: rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding: 20px; z-index: 10; overflow-y:auto; }
   .modal-bg.show{ display:flex; }
-  .modal{ background: var(--paper); color: var(--ink); border-radius: 10px; padding: 20px; width: 100%; max-width: 360px; }
+  .modal{ background: var(--paper); color: var(--ink); border-radius: 10px; padding: 20px; width: 100%; max-width: 360px; margin: auto; }
   .modal h3{ margin: 0 0 14px; font-size: 1.05rem; }
   .modal label{ display:block; font-size: 0.75rem; color: #555; margin: 10px 0 4px; }
-  .modal input, .modal select{ width:100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc4b4; font-size: 0.9rem; font-family: inherit; }
+  .modal input, .modal select, .modal textarea{ width:100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc4b4; font-size: 0.9rem; font-family: inherit; }
   .modal .row2{ display:flex; gap: 10px; }
   .modal .row2 > div{ flex:1; }
   .modal-actions{ display:flex; justify-content:flex-end; gap: 8px; margin-top: 18px; }
@@ -204,7 +216,7 @@
         <img src="logo.png" alt="Cilyx" />
       </div>
       <div class="title-block">
-        <h1><span class="hazard-tag"></span>Armoires produits dangereux</h1>
+        <h1><span class="hazard-tag"></span>Inventaire des stocks</h1>
         <p id="headerSub">Inventaire partagé — mis à jour à chaque ouverture</p>
       </div>
     </div>
@@ -217,20 +229,38 @@
     </div>
   </header>
 
-  <!-- HOME VIEW: list of cabinets -->
+  <!-- HOME VIEW: list of categories -->
   <div id="homeView">
-    <div class="controls">
-      <h2 id="cabCount">Chargement…</h2>
-      <button class="btn-add" id="openAddCabinetBtn">+ Ajouter une armoire</button>
+    <div class="alert-banner" id="migrationBanner" style="background: linear-gradient(90deg, var(--teal), #2c5f5c);">
+      <div class="head" id="migrationText">⚠ Emplacements sans catégorie détectés</div>
+      <button class="btn-add" id="migrateBtn" style="margin-top:8px; background: rgba(255,255,255,0.15);">Les ranger automatiquement dans "Produits dangereux"</button>
     </div>
-    <div class="cab-grid" id="cabGrid"></div>
-    <div class="empty" id="emptyCabState" style="display:none;">Aucune armoire pour l'instant. Créez-en une pour commencer.</div>
+    <div class="controls">
+      <h2 id="catCount">Chargement…</h2>
+      <button class="btn-add" id="openAddCategoryBtn">+ Ajouter une catégorie</button>
+    </div>
+    <div class="cab-grid" id="catGrid"></div>
+    <div class="empty" id="emptyCatState" style="display:none;">Aucune catégorie pour l'instant. Créez-en une pour commencer (ex: Produits dangereux, Électricité, Visserie…).</div>
   </div>
 
-  <!-- CABINET VIEW: products of one cabinet -->
+  <!-- CATEGORY VIEW: list of containers (armoires/racks/zones) within a category -->
+  <div id="categoryView" style="display:none;">
+    <div class="back-row">
+      <button class="back-btn" id="backToHomeBtn">← Toutes les catégories</button>
+      <span class="crumb-title" id="categoryTitle"></span>
+    </div>
+    <div class="controls">
+      <h2 id="cabCount">Chargement…</h2>
+      <button class="btn-add" id="openAddCabinetBtn">+ Ajouter un emplacement</button>
+    </div>
+    <div class="cab-grid" id="cabGrid"></div>
+    <div class="empty" id="emptyCabState" style="display:none;">Aucun emplacement pour l'instant. Créez-en un (armoire, rack, zone…) pour commencer.</div>
+  </div>
+
+  <!-- CABINET VIEW: products of one container -->
   <div id="cabinetView" style="display:none;">
     <div class="back-row">
-      <button class="back-btn" id="backBtn">← Toutes les armoires</button>
+      <button class="back-btn" id="backToCategoryBtn">← Retour</button>
       <span class="crumb-title" id="cabinetTitle"></span>
     </div>
 
@@ -252,10 +282,10 @@
 
     <div class="grid" id="grid"></div>
     <div class="list-view" id="listView" style="display:none;"></div>
-    <div class="empty" id="emptyState" style="display:none;">Aucun produit dans cette armoire pour l'instant. Ajoutez-en un pour démarrer l'inventaire.</div>
+    <div class="empty" id="emptyState" style="display:none;">Aucun produit ici pour l'instant. Ajoutez-en un pour démarrer l'inventaire.</div>
 
     <details class="history">
-      <summary>Historique des mouvements de cette armoire</summary>
+      <summary>Historique des mouvements de cet emplacement</summary>
       <div id="logList"></div>
     </details>
   </div>
@@ -263,13 +293,45 @@
   <div class="status" id="statusLine"></div>
 </div>
 
+<!-- Modale catégorie -->
+<div class="modal-bg" id="addCategoryBg">
+  <div class="modal">
+    <h3 id="categoryModalTitle">Créer une catégorie</h3>
+    <label>Nom de la catégorie</label>
+    <input id="g_name" placeholder="Ex: Électricité, Visserie, Mécanique…" />
+    <label>Description (optionnel)</label>
+    <input id="g_desc" placeholder="Ex: Consommables électriques" />
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelAddCategory">Annuler</button>
+      <button class="btn-save" id="confirmAddCategory">Créer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirmDeleteCategoryBg">
+  <div class="modal">
+    <h3 id="deleteCategoryTitle">Supprimer cette catégorie ?</h3>
+    <p id="deleteCategoryWarning" style="font-size:0.85rem; color:#555; margin-top:-6px;"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelDeleteCategory">Annuler</button>
+      <button class="btn-save" id="confirmDeleteCategory" style="background: var(--danger);">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale emplacement (armoire / rack / zone) -->
 <div class="modal-bg" id="addCabinetBg">
   <div class="modal">
-    <h3>Créer une armoire</h3>
-    <label>Nom de l'armoire</label>
-    <input id="c_name" placeholder="Ex: Armoire produits inflammables" />
+    <h3 id="cabinetModalTitle">Créer un emplacement</h3>
+    <label>Photo du lieu (optionnel)</label>
+    <input id="c_photo" type="file" accept="image/*" />
+    <img id="c_photo_preview" style="display:none; max-width:100%; max-height:120px; margin-top:8px; border-radius:6px;" />
+    <label>Nom de l'emplacement</label>
+    <input id="c_name" placeholder="Ex: Armoire produits inflammables, Rack A3…" />
     <label>Description (optionnel)</label>
     <input id="c_desc" placeholder="Ex: Atelier — zone A" />
+    <label>Où le trouver (optionnel)</label>
+    <input id="c_note" placeholder="Ex: Fond de l'atelier, à côté de la porte de secours" />
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelAddCabinet">Annuler</button>
       <button class="btn-save" id="confirmAddCabinet">Créer</button>
@@ -279,7 +341,7 @@
 
 <div class="modal-bg" id="confirmDeleteCabinetBg">
   <div class="modal">
-    <h3 id="deleteCabinetTitle">Supprimer cette armoire ?</h3>
+    <h3 id="deleteCabinetTitle">Supprimer cet emplacement ?</h3>
     <p id="deleteCabinetWarning" style="font-size:0.85rem; color:#555; margin-top:-6px;"></p>
     <div class="modal-actions">
       <button class="btn-cancel" id="cancelDeleteCabinet">Annuler</button>
@@ -318,7 +380,7 @@
     <img id="f_photo_preview" style="display:none; max-width:100%; max-height:120px; margin-top:8px; border-radius:6px;" />
     <label>Nom du produit</label>
     <input id="f_name" placeholder="Ex: Bombe aérosol dégraissant" />
-    <label>Catégorie (optionnel)</label>
+    <label>Catégorie / type (optionnel)</label>
     <input id="f_cat" placeholder="Ex: Aérosols, Solvants…" />
     <div class="row2">
       <div>
@@ -346,10 +408,12 @@
 <div class="toast" id="toast"></div>
 
 <script>
+let categories = [];
 let cabinets = [];
 let products = [];
 let log = [];
-let currentCabinetId = null; // null = home view
+let currentCategoryId = null; // null = home view
+let currentCabinetId = null;  // null = category view
 let db = null;
 
 function showToast(msg){
@@ -421,6 +485,10 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 });
 
 function attachListeners(){
+  db.ref('categories').on('value', snap => {
+    categories = snap.val() || [];
+    renderAll();
+  });
   db.ref('cabinets').on('value', snap => {
     cabinets = snap.val() || [];
     renderAll();
@@ -433,6 +501,11 @@ function attachListeners(){
     log = snap.val() || [];
     renderAll();
   });
+}
+
+async function saveCategories(){
+  try{ await db.ref('categories').set(categories); }
+  catch(e){ console.error(e); showToast('Erreur de sauvegarde'); }
 }
 
 async function saveCabinets(){
@@ -486,39 +559,230 @@ function formatPrice(value){
   return n.toLocaleString('fr-BE', { style: 'currency', currency: 'EUR' });
 }
 
+/* Un produit est "en alerte visible" (bandeau rouge) seulement s'il est bas ET pas déjà en commande */
+function isUnaddressedLow(p){
+  return p.quantity <= p.threshold && !p.ordered;
+}
+function isLow(p){
+  return p.quantity <= p.threshold;
+}
+
 function renderAll(){
-  if(currentCabinetId === null){
+  if(currentCategoryId === null){
     document.getElementById('homeView').style.display = 'block';
+    document.getElementById('categoryView').style.display = 'none';
     document.getElementById('cabinetView').style.display = 'none';
-    document.getElementById('headerSub').textContent = 'Inventaire partagé — mis à jour à chaque ouverture';
+    document.getElementById('headerSub').textContent = 'Sélectionnez une catégorie de stock';
     renderHome();
+  } else if(currentCabinetId === null){
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('categoryView').style.display = 'block';
+    document.getElementById('cabinetView').style.display = 'none';
+    const cat = categories.find(c => c.id === currentCategoryId);
+    document.getElementById('headerSub').textContent = cat ? (cat.description || 'Emplacements de cette catégorie') : '';
+    renderCategory();
   } else {
     document.getElementById('homeView').style.display = 'none';
+    document.getElementById('categoryView').style.display = 'none';
     document.getElementById('cabinetView').style.display = 'block';
     const cab = cabinets.find(c => c.id === currentCabinetId);
-    document.getElementById('headerSub').textContent = cab ? (cab.description || 'Détail de l\'armoire') : '';
+    document.getElementById('headerSub').textContent = cab ? (cab.description || 'Détail de l\'emplacement') : '';
     renderCabinet();
   }
 }
 
+/* ---------------- HOME (catégories) ---------------- */
 function renderHome(){
+  const grid = document.getElementById('catGrid');
+  const empty = document.getElementById('emptyCatState');
+  grid.innerHTML = '';
+  empty.style.display = categories.length === 0 ? 'block' : 'none';
+  document.getElementById('catCount').textContent = categories.length + ' catégorie' + (categories.length !== 1 ? 's' : '');
+
+  const orphanCabinets = cabinets.filter(c => !c.categoryId);
+  const migrationBanner = document.getElementById('migrationBanner');
+  if(orphanCabinets.length > 0){
+    migrationBanner.classList.add('show');
+    document.getElementById('migrationText').textContent = `⚠ ${orphanCabinets.length} emplacement${orphanCabinets.length !== 1 ? 's' : ''} sans catégorie détecté${orphanCabinets.length !== 1 ? 's' : ''} (créés avant cette mise à jour)`;
+  } else {
+    migrationBanner.classList.remove('show');
+  }
+
+  categories.forEach(cat => {
+    const catCabinets = cabinets.filter(c => c.categoryId === cat.id);
+    const catCabinetIds = catCabinets.map(c => c.id);
+    const catProducts = products.filter(p => catCabinetIds.includes(p.cabinetId));
+    const lowCount = catProducts.filter(isUnaddressedLow).length;
+    const card = document.createElement('div');
+    card.className = 'cab-card' + (lowCount > 0 ? ' has-alert' : '');
+    card.dataset.id = cat.id;
+    card.innerHTML = `
+      <button class="del" data-id="${cat.id}" title="Supprimer la catégorie">✕</button>
+      <button class="edit" data-id="${cat.id}" title="Modifier">✎</button>
+      <div class="icon"></div>
+      <div class="cab-name">${escapeHtml(cat.name)}</div>
+      <div class="cab-desc">${escapeHtml(cat.description || '')}</div>
+      <div class="cab-meta">
+        <span>${catCabinets.length} emplacement${catCabinets.length !== 1 ? 's' : ''}</span>
+        ${lowCount > 0 ? `<span class="warn">⚠ ${lowCount} à recommander</span>` : '<span>Stock ok</span>'}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('migrateBtn').addEventListener('click', async () => {
+  const orphanCabinets = cabinets.filter(c => !c.categoryId);
+  if(orphanCabinets.length === 0) return;
+
+  let targetCat = categories.find(c => c.name.trim().toLowerCase() === 'produits dangereux');
+  if(!targetCat){
+    targetCat = {
+      id: 'catg_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      name: 'Produits dangereux',
+      description: ''
+    };
+    categories.push(targetCat);
+  }
+
+  orphanCabinets.forEach(cab => { cab.categoryId = targetCat.id; });
+
+  renderAll();
+  await saveCategories();
+  await saveCabinets();
+  showToast(`${orphanCabinets.length} emplacement${orphanCabinets.length !== 1 ? 's' : ''} rangé${orphanCabinets.length !== 1 ? 's' : ''} dans "Produits dangereux"`);
+});
+
+document.getElementById('catGrid').addEventListener('click', (e) => {
+  const delBtn = e.target.closest('.del');
+  if(delBtn){ openDeleteCategoryModal(delBtn.dataset.id); return; }
+  const editBtn = e.target.closest('.edit');
+  if(editBtn){ openEditCategoryModal(editBtn.dataset.id); return; }
+  const card = e.target.closest('.cab-card');
+  if(card){
+    currentCategoryId = card.dataset.id;
+    renderAll();
+  }
+});
+
+document.getElementById('backToHomeBtn').addEventListener('click', () => {
+  currentCategoryId = null;
+  renderAll();
+});
+
+/* ---- Catégorie CRUD ---- */
+let pendingCategoryEditId = null;
+
+document.getElementById('openAddCategoryBtn').addEventListener('click', () => {
+  pendingCategoryEditId = null;
+  document.getElementById('g_name').value = '';
+  document.getElementById('g_desc').value = '';
+  document.getElementById('categoryModalTitle').textContent = 'Créer une catégorie';
+  document.getElementById('confirmAddCategory').textContent = 'Créer';
+  document.getElementById('addCategoryBg').classList.add('show');
+});
+
+function openEditCategoryModal(id){
+  const cat = categories.find(c => c.id === id);
+  if(!cat) return;
+  pendingCategoryEditId = id;
+  document.getElementById('g_name').value = cat.name || '';
+  document.getElementById('g_desc').value = cat.description || '';
+  document.getElementById('categoryModalTitle').textContent = 'Modifier la catégorie';
+  document.getElementById('confirmAddCategory').textContent = 'Enregistrer';
+  document.getElementById('addCategoryBg').classList.add('show');
+}
+
+document.getElementById('cancelAddCategory').addEventListener('click', () => {
+  document.getElementById('addCategoryBg').classList.remove('show');
+  pendingCategoryEditId = null;
+});
+
+document.getElementById('confirmAddCategory').addEventListener('click', async () => {
+  const name = document.getElementById('g_name').value.trim();
+  if(!name){ showToast('Le nom de la catégorie est requis'); return; }
+  const description = document.getElementById('g_desc').value.trim();
+  document.getElementById('addCategoryBg').classList.remove('show');
+
+  if(pendingCategoryEditId){
+    const cat = categories.find(c => c.id === pendingCategoryEditId);
+    if(cat){ cat.name = name; cat.description = description; }
+    renderAll();
+    await saveCategories();
+    showToast(`Catégorie "${name}" mise à jour`);
+  } else {
+    const newCat = {
+      id: 'catg_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      name, description
+    };
+    categories.push(newCat);
+    renderAll();
+    await saveCategories();
+    showToast(`Catégorie "${newCat.name}" créée`);
+  }
+  pendingCategoryEditId = null;
+});
+
+let pendingDeleteCategoryId = null;
+function openDeleteCategoryModal(id){
+  const cat = categories.find(c => c.id === id);
+  if(!cat) return;
+  pendingDeleteCategoryId = id;
+  const catCabinetIds = cabinets.filter(c => c.categoryId === id).map(c => c.id);
+  const cabCount = catCabinetIds.length;
+  const prodCount = products.filter(p => catCabinetIds.includes(p.cabinetId)).length;
+  document.getElementById('deleteCategoryTitle').textContent = `Supprimer "${cat.name}" ?`;
+  document.getElementById('deleteCategoryWarning').textContent = (cabCount > 0 || prodCount > 0)
+    ? `Cette catégorie contient ${cabCount} emplacement${cabCount !== 1 ? 's' : ''} et ${prodCount} produit${prodCount !== 1 ? 's' : ''}. Tout sera supprimé aussi.`
+    : `Cette catégorie est vide.`;
+  document.getElementById('confirmDeleteCategoryBg').classList.add('show');
+}
+document.getElementById('cancelDeleteCategory').addEventListener('click', () => {
+  document.getElementById('confirmDeleteCategoryBg').classList.remove('show');
+  pendingDeleteCategoryId = null;
+});
+document.getElementById('confirmDeleteCategory').addEventListener('click', async () => {
+  const id = pendingDeleteCategoryId;
+  const cat = categories.find(c => c.id === id);
+  document.getElementById('confirmDeleteCategoryBg').classList.remove('show');
+  if(!cat) return;
+  const catCabinetIds = cabinets.filter(c => c.categoryId === id).map(c => c.id);
+  categories = categories.filter(c => c.id !== id);
+  cabinets = cabinets.filter(c => c.categoryId !== id);
+  products = products.filter(p => !catCabinetIds.includes(p.cabinetId));
+  renderAll();
+  await saveCategories();
+  await saveCabinets();
+  await saveProducts();
+  showToast(`Catégorie "${cat.name}" supprimée`);
+  pendingDeleteCategoryId = null;
+});
+
+/* ---------------- CATEGORY VIEW (emplacements) ---------------- */
+function renderCategory(){
+  const cat = categories.find(c => c.id === currentCategoryId);
+  document.getElementById('categoryTitle').textContent = cat ? cat.name : '';
+
+  const catCabinets = cabinets.filter(c => c.categoryId === currentCategoryId);
   const grid = document.getElementById('cabGrid');
   const empty = document.getElementById('emptyCabState');
   grid.innerHTML = '';
-  empty.style.display = cabinets.length === 0 ? 'block' : 'none';
-  document.getElementById('cabCount').textContent = cabinets.length + ' armoire' + (cabinets.length !== 1 ? 's' : '');
+  empty.style.display = catCabinets.length === 0 ? 'block' : 'none';
+  document.getElementById('cabCount').textContent = catCabinets.length + ' emplacement' + (catCabinets.length !== 1 ? 's' : '');
 
-  cabinets.forEach(cab => {
+  catCabinets.forEach(cab => {
     const cabProducts = products.filter(p => p.cabinetId === cab.id);
-    const lowCount = cabProducts.filter(p => p.quantity <= p.threshold).length;
+    const lowCount = cabProducts.filter(isUnaddressedLow).length;
+    const photoHtml = cab.photo ? `<img class="loc-photo" src="${cab.photo}" alt="" />` : '';
     const card = document.createElement('div');
     card.className = 'cab-card' + (lowCount > 0 ? ' has-alert' : '');
     card.dataset.id = cab.id;
     card.innerHTML = `
-      <button class="del" data-id="${cab.id}" title="Supprimer l'armoire">✕</button>
-      <div class="icon"></div>
+      <button class="del" data-id="${cab.id}" title="Supprimer l'emplacement">✕</button>
+      <button class="edit" data-id="${cab.id}" title="Modifier">✎</button>
+      ${photoHtml}
       <div class="cab-name">${escapeHtml(cab.name)}</div>
-      <div class="cab-desc">${escapeHtml(cab.description || '')}</div>
+      <div class="cab-desc">${escapeHtml(cab.description || '')}${cab.note ? (cab.description ? ' — ' : '') + '📍 ' + escapeHtml(cab.note) : ''}</div>
       <div class="cab-meta">
         <span>${cabProducts.length} produit${cabProducts.length !== 1 ? 's' : ''}</span>
         ${lowCount > 0 ? `<span class="warn">⚠ ${lowCount} à recommander</span>` : '<span>Stock ok</span>'}
@@ -527,6 +791,171 @@ function renderHome(){
     grid.appendChild(card);
   });
 }
+
+document.getElementById('cabGrid').addEventListener('click', (e) => {
+  const delBtn = e.target.closest('.del');
+  if(delBtn){ openDeleteCabinetModal(delBtn.dataset.id); return; }
+  const editBtn = e.target.closest('.edit');
+  if(editBtn){ openEditCabinetModal(editBtn.dataset.id); return; }
+  const card = e.target.closest('.cab-card');
+  if(card){
+    currentCabinetId = card.dataset.id;
+    renderAll();
+  }
+});
+
+document.getElementById('backToCategoryBtn').addEventListener('click', () => {
+  currentCabinetId = null;
+  renderAll();
+});
+
+/* ---- Emplacement (cabinet) CRUD ---- */
+let pendingCabinetEditId = null;
+let pendingCabPhotoDataUrl = null;
+let existingCabPhotoOnEdit = null;
+
+function resizeImageFile(file, maxSize = 480, quality = 0.7){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image invalide'));
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > height && width > maxSize){ height = Math.round(height * maxSize / width); width = maxSize; }
+        else if(height > maxSize){ width = Math.round(width * maxSize / height); height = maxSize; }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('c_photo').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    pendingCabPhotoDataUrl = await resizeImageFile(file);
+    const preview = document.getElementById('c_photo_preview');
+    preview.src = pendingCabPhotoDataUrl;
+    preview.style.display = 'block';
+  }catch(err){
+    console.error(err);
+    showToast("Impossible de traiter cette photo");
+  }
+});
+
+function resetCabinetForm(){
+  document.getElementById('c_name').value = '';
+  document.getElementById('c_desc').value = '';
+  document.getElementById('c_note').value = '';
+  document.getElementById('c_photo').value = '';
+  document.getElementById('c_photo_preview').style.display = 'none';
+  pendingCabPhotoDataUrl = null;
+  existingCabPhotoOnEdit = null;
+}
+
+document.getElementById('openAddCabinetBtn').addEventListener('click', () => {
+  pendingCabinetEditId = null;
+  resetCabinetForm();
+  document.getElementById('cabinetModalTitle').textContent = 'Créer un emplacement';
+  document.getElementById('confirmAddCabinet').textContent = 'Créer';
+  document.getElementById('addCabinetBg').classList.add('show');
+});
+
+function openEditCabinetModal(id){
+  const cab = cabinets.find(c => c.id === id);
+  if(!cab) return;
+  pendingCabinetEditId = id;
+  resetCabinetForm();
+  document.getElementById('c_name').value = cab.name || '';
+  document.getElementById('c_desc').value = cab.description || '';
+  document.getElementById('c_note').value = cab.note || '';
+  if(cab.photo){
+    existingCabPhotoOnEdit = cab.photo;
+    const preview = document.getElementById('c_photo_preview');
+    preview.src = cab.photo;
+    preview.style.display = 'block';
+  }
+  document.getElementById('cabinetModalTitle').textContent = 'Modifier l\'emplacement';
+  document.getElementById('confirmAddCabinet').textContent = 'Enregistrer';
+  document.getElementById('addCabinetBg').classList.add('show');
+}
+
+document.getElementById('cancelAddCabinet').addEventListener('click', () => {
+  document.getElementById('addCabinetBg').classList.remove('show');
+  pendingCabinetEditId = null;
+});
+
+document.getElementById('confirmAddCabinet').addEventListener('click', async () => {
+  const name = document.getElementById('c_name').value.trim();
+  if(!name){ showToast('Le nom de l\'emplacement est requis'); return; }
+  const description = document.getElementById('c_desc').value.trim();
+  const note = document.getElementById('c_note').value.trim();
+  const finalPhoto = pendingCabPhotoDataUrl || existingCabPhotoOnEdit || null;
+  document.getElementById('addCabinetBg').classList.remove('show');
+
+  if(pendingCabinetEditId){
+    const cab = cabinets.find(c => c.id === pendingCabinetEditId);
+    if(cab){ cab.name = name; cab.description = description; cab.note = note; cab.photo = finalPhoto; }
+    renderAll();
+    await saveCabinets();
+    showToast(`Emplacement "${name}" mis à jour`);
+  } else {
+    const newCab = {
+      id: 'cab_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      categoryId: currentCategoryId,
+      name, description, note,
+      photo: finalPhoto
+    };
+    cabinets.push(newCab);
+    renderAll();
+    await saveCabinets();
+    showToast(`Emplacement "${newCab.name}" créé`);
+  }
+  pendingCabinetEditId = null;
+  pendingCabPhotoDataUrl = null;
+  existingCabPhotoOnEdit = null;
+});
+
+let pendingDeleteCabinetId = null;
+function openDeleteCabinetModal(id){
+  const cab = cabinets.find(c => c.id === id);
+  if(!cab) return;
+  pendingDeleteCabinetId = id;
+  const count = products.filter(p => p.cabinetId === id).length;
+  document.getElementById('deleteCabinetTitle').textContent = `Supprimer "${cab.name}" ?`;
+  document.getElementById('deleteCabinetWarning').textContent = count > 0
+    ? `Cet emplacement contient ${count} produit${count !== 1 ? 's' : ''}. Ils seront supprimés aussi.`
+    : `Cet emplacement est vide.`;
+  document.getElementById('confirmDeleteCabinetBg').classList.add('show');
+}
+document.getElementById('cancelDeleteCabinet').addEventListener('click', () => {
+  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
+  pendingDeleteCabinetId = null;
+});
+document.getElementById('confirmDeleteCabinet').addEventListener('click', async () => {
+  const id = pendingDeleteCabinetId;
+  const cab = cabinets.find(c => c.id === id);
+  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
+  if(!cab) return;
+  cabinets = cabinets.filter(c => c.id !== id);
+  products = products.filter(p => p.cabinetId !== id);
+  renderAll();
+  await saveCabinets();
+  await saveProducts();
+  showToast(`Emplacement "${cab.name}" supprimé`);
+  pendingDeleteCabinetId = null;
+});
+
+/* ---------------- CABINET VIEW (produits) ---------------- */
+let currentViewMode = 'cards';
+try{ currentViewMode = localStorage.getItem('inventaire_view_mode') || 'cards'; }catch(e){ /* ignore */ }
 
 function renderCabinet(){
   const cab = cabinets.find(c => c.id === currentCabinetId);
@@ -541,12 +970,12 @@ function renderCabinet(){
   listView.innerHTML = '';
   empty.style.display = cabProducts.length === 0 ? 'block' : 'none';
 
-  const low = cabProducts.filter(p => p.quantity <= p.threshold);
+  const unaddressedLow = cabProducts.filter(isUnaddressedLow);
   const banner = document.getElementById('alertBanner');
   const alertList = document.getElementById('alertList');
-  if(low.length > 0){
+  if(unaddressedLow.length > 0){
     banner.classList.add('show');
-    alertList.innerHTML = low.map(p => `<li>${escapeHtml(p.name)} — reste ${p.quantity} ${escapeHtml(p.unit)} (seuil ${p.threshold})</li>`).join('');
+    alertList.innerHTML = unaddressedLow.map(p => `<li>${escapeHtml(p.name)} — reste ${p.quantity} ${escapeHtml(p.unit)} (seuil ${p.threshold})</li>`).join('');
   } else {
     banner.classList.remove('show');
   }
@@ -559,12 +988,14 @@ function renderCabinet(){
   document.querySelectorAll('#viewToggle .view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentViewMode));
 
   cabProducts.forEach(p => {
-    const isLow = p.quantity <= p.threshold;
+    const low = isLow(p);
+    const unaddressed = isUnaddressedLow(p);
+    const cardStateClass = unaddressed ? ' low' : (low && p.ordered ? ' ordered' : '');
     const photoHtml = p.photo
       ? `<img class="photo" src="${p.photo}" alt="" />`
       : `<div class="photo-placeholder">Pas de photo</div>`;
     const card = document.createElement('div');
-    card.className = 'card' + (isLow ? ' low' : '');
+    card.className = 'card' + cardStateClass;
     card.innerHTML = `
       <button class="del" data-id="${p.id}" title="Supprimer">✕</button>
       <button class="edit" data-id="${p.id}" title="Modifier">✎</button>
@@ -574,10 +1005,12 @@ function renderCabinet(){
       <div class="qty-row"><span class="qty">${p.quantity}</span><span class="unit">${escapeHtml(p.unit)}</span></div>
       <div class="threshold">Seuil d'alerte : ${p.threshold} ${escapeHtml(p.unit)}</div>
       ${(p.price !== undefined && p.price !== null && p.price !== '') ? `<div class="price">${formatPrice(p.price)} / ${escapeHtml(p.unit)}</div>` : ''}
+      ${low && p.ordered ? `<div class="ordered-tag">Commandé, en attente</div>` : ''}
       ${p.url ? `<a class="product-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">Voir le produit ↗</a>` : ''}
       <div class="actions">
         <button class="btn-take" data-id="${p.id}" data-act="take">− Prendre 1</button>
         <button class="btn-restock" data-id="${p.id}" data-act="restock">+ Réappro.</button>
+        <button class="btn-ordered${p.ordered ? ' active' : ''}" data-id="${p.id}" data-act="toggle-ordered">${p.ordered ? '✓ Commandé' : '☐ Marquer en commande'}</button>
       </div>
     `;
     grid.appendChild(card);
@@ -585,17 +1018,19 @@ function renderCabinet(){
     const thumbHtml = p.photo
       ? `<img class="thumb" src="${p.photo}" alt="" />`
       : `<div class="thumb-placeholder"></div>`;
+    const rowStateClass = unaddressed ? ' low' : (low && p.ordered ? ' ordered' : '');
     const row = document.createElement('div');
-    row.className = 'list-row' + (isLow ? ' low' : '');
+    row.className = 'list-row' + rowStateClass;
     row.innerHTML = `
       ${thumbHtml}
       <div class="info">
         <div class="n">${escapeHtml(p.name)}</div>
-        <div class="c">${p.category ? escapeHtml(p.category) + ' — ' : ''}seuil ${p.threshold} ${escapeHtml(p.unit)}${(p.price !== undefined && p.price !== null && p.price !== '') ? ' — ' + formatPrice(p.price) : ''}</div>
+        <div class="c">${p.category ? escapeHtml(p.category) + ' — ' : ''}seuil ${p.threshold} ${escapeHtml(p.unit)}${(p.price !== undefined && p.price !== null && p.price !== '') ? ' — ' + formatPrice(p.price) : ''}${(low && p.ordered) ? ' — Commandé' : ''}</div>
       </div>
       <div class="q">${p.quantity} <span style="font-size:0.65rem; color:var(--muted); font-weight:400;">${escapeHtml(p.unit)}</span></div>
       <div class="list-actions">
         ${p.url ? `<a class="list-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer" title="Voir le produit">🔗</a>` : ''}
+        <button class="ordered-toggle${p.ordered ? ' active' : ''}" data-id="${p.id}" data-act="toggle-ordered" title="${p.ordered ? 'Annuler la commande' : 'Marquer en commande'}">${p.ordered ? '✓' : '☐'}</button>
         <button class="btn-take" data-id="${p.id}" data-act="take" title="Prendre 1">−1</button>
         <button class="btn-restock" data-id="${p.id}" data-act="restock" title="Réapprovisionner">+</button>
         <button class="edit" data-id="${p.id}" title="Modifier">✎</button>
@@ -619,100 +1054,33 @@ function renderCabinet(){
   }
 }
 
-/* ---- Bascule vue cartes / liste ---- */
-let currentViewMode = 'cards';
-try{ currentViewMode = localStorage.getItem('inventaire_view_mode') || 'cards'; }catch(e){ /* ignore */ }
-
 document.getElementById('viewToggle').addEventListener('click', (e) => {
   const btn = e.target.closest('.view-btn');
   if(!btn) return;
   currentViewMode = btn.dataset.view;
   try{ localStorage.setItem('inventaire_view_mode', currentViewMode); }catch(e){ /* ignore */ }
-  document.querySelectorAll('#viewToggle .view-btn').forEach(b => b.classList.toggle('active', b === btn));
   renderCabinet();
 });
 
-document.getElementById('listView').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if(!btn) return;
+function handleProductAction(btn){
   const id = btn.dataset.id;
   if(btn.classList.contains('del')) deleteProduct(id);
   else if(btn.classList.contains('edit')) openEditModal(id);
   else if(btn.dataset.act === 'take') takeOne(id);
   else if(btn.dataset.act === 'restock') restock(id);
-});
-
-/* ---- Navigation ---- */
-document.getElementById('backBtn').addEventListener('click', () => {
-  currentCabinetId = null;
-  renderAll();
-});
-
-document.getElementById('cabGrid').addEventListener('click', (e) => {
-  const delBtn = e.target.closest('.del');
-  if(delBtn){
-    openDeleteCabinetModal(delBtn.dataset.id);
-    return;
-  }
-  const card = e.target.closest('.cab-card');
-  if(card){
-    currentCabinetId = card.dataset.id;
-    renderAll();
-  }
-});
-
-/* ---- Cabinet CRUD ---- */
-document.getElementById('openAddCabinetBtn').addEventListener('click', () => {
-  document.getElementById('c_name').value = '';
-  document.getElementById('c_desc').value = '';
-  document.getElementById('addCabinetBg').classList.add('show');
-});
-document.getElementById('cancelAddCabinet').addEventListener('click', () => {
-  document.getElementById('addCabinetBg').classList.remove('show');
-});
-document.getElementById('confirmAddCabinet').addEventListener('click', async () => {
-  const name = document.getElementById('c_name').value.trim();
-  if(!name){ showToast('Le nom de l\'armoire est requis'); return; }
-  const newCab = {
-    id: 'cab_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    name,
-    description: document.getElementById('c_desc').value.trim()
-  };
-  cabinets.push(newCab);
-  document.getElementById('addCabinetBg').classList.remove('show');
-  renderAll();
-  await saveCabinets();
-  showToast(`Armoire "${newCab.name}" créée`);
-});
-
-let pendingDeleteCabinetId = null;
-function openDeleteCabinetModal(id){
-  const cab = cabinets.find(c => c.id === id);
-  if(!cab) return;
-  pendingDeleteCabinetId = id;
-  const count = products.filter(p => p.cabinetId === id).length;
-  document.getElementById('deleteCabinetTitle').textContent = `Supprimer "${cab.name}" ?`;
-  document.getElementById('deleteCabinetWarning').textContent = count > 0
-    ? `Cette armoire contient ${count} produit${count !== 1 ? 's' : ''}. Ils seront supprimés aussi.`
-    : `Cette armoire est vide.`;
-  document.getElementById('confirmDeleteCabinetBg').classList.add('show');
+  else if(btn.dataset.act === 'toggle-ordered') toggleOrdered(id);
 }
-document.getElementById('cancelDeleteCabinet').addEventListener('click', () => {
-  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
-  pendingDeleteCabinetId = null;
+
+document.getElementById('listView').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  handleProductAction(btn);
 });
-document.getElementById('confirmDeleteCabinet').addEventListener('click', async () => {
-  const id = pendingDeleteCabinetId;
-  const cab = cabinets.find(c => c.id === id);
-  document.getElementById('confirmDeleteCabinetBg').classList.remove('show');
-  if(!cab) return;
-  cabinets = cabinets.filter(c => c.id !== id);
-  products = products.filter(p => p.cabinetId !== id);
-  renderAll();
-  await saveCabinets();
-  await saveProducts();
-  showToast(`Armoire "${cab.name}" supprimée`);
-  pendingDeleteCabinetId = null;
+
+document.getElementById('grid').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  handleProductAction(btn);
 });
 
 /* ---- Product actions ---- */
@@ -726,6 +1094,17 @@ async function takeOne(id){
   addLogEntry(p.cabinetId, 'a pris 1', p.name, -1);
   renderAll();
   showToast(`1 ${p.unit} de "${p.name}" retiré`);
+}
+
+async function toggleOrdered(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  p.ordered = !p.ordered;
+  renderAll();
+  await saveProducts();
+  addLogEntry(p.cabinetId, p.ordered ? 'a marqué en commande' : 'a annulé la commande de', p.name, null);
+  renderAll();
+  showToast(p.ordered ? `"${p.name}" marqué en commande` : `Commande annulée pour "${p.name}"`);
 }
 
 let pendingRestockId = null;
@@ -753,6 +1132,7 @@ document.getElementById('confirmRestock').addEventListener('click', async () => 
   const n = parseInt(document.getElementById('r_qty').value, 10);
   if(isNaN(n) || n <= 0){ showToast('Quantité invalide'); return; }
   p.quantity += n;
+  p.ordered = false; // le stock est arrivé, on lève le statut "en commande"
   renderAll();
   await saveProducts();
   addLogEntry(p.cabinetId, 'a réapprovisionné', p.name, n);
@@ -786,41 +1166,10 @@ document.getElementById('confirmDelete').addEventListener('click', async () => {
   pendingDeleteId = null;
 });
 
-document.getElementById('grid').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if(!btn) return;
-  const id = btn.dataset.id;
-  if(btn.classList.contains('del')) deleteProduct(id);
-  else if(btn.classList.contains('edit')) openEditModal(id);
-  else if(btn.dataset.act === 'take') takeOne(id);
-  else if(btn.dataset.act === 'restock') restock(id);
-});
-
+/* ---- Product form (add/edit) ---- */
 let pendingPhotoDataUrl = null;
 let pendingEditId = null; // null = mode ajout, sinon id du produit en cours de modification
 let existingPhotoOnEdit = null;
-
-function resizeImageFile(file, maxSize = 480, quality = 0.7){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Lecture du fichier impossible'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Image invalide'));
-      img.onload = () => {
-        let { width, height } = img;
-        if(width > height && width > maxSize){ height = Math.round(height * maxSize / width); width = maxSize; }
-        else if(height > maxSize){ width = Math.round(width * maxSize / height); height = maxSize; }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 document.getElementById('f_photo').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -915,6 +1264,7 @@ document.getElementById('confirmAdd').addEventListener('click', async () => {
     const newP = {
       id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
       cabinetId: currentCabinetId,
+      ordered: false,
       ...fields
     };
     products.push(newP);
