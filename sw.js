@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inventaire-cilyx-v1';
+const CACHE_NAME = 'inventaire-cilyx-v2';
 const APP_SHELL = [
   './index.html',
   './manifest.json',
@@ -22,12 +22,20 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// App shell: cache-first (works offline for the interface).
-// Firebase calls go straight to the network (not intercepted) so data stays live.
+// Réseau d'abord : on va toujours chercher la dernière version en ligne.
+// Le cache ne sert que si le réseau est indisponible (mode hors-ligne).
+// Firebase et les CDN externes ne sont jamais interceptés, pour garder les données en direct.
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return; // let Firebase/CDN requests pass through
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
