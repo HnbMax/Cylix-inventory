@@ -185,19 +185,7 @@
 </head>
 <body>
 
-<div class="setup-screen" id="setupScreen" style="display:none;">
-  <h2>Connecter l'inventaire à une base partagée</h2>
-  <p>Cette application a besoin d'une base de données gratuite (Firebase) pour que tous vos collègues voient les mêmes données. À faire une seule fois :</p>
-  <p>1. Allez sur <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>, connectez-vous avec un compte Google, cliquez sur "Ajouter un projet".<br>
-  2. Dans le projet, ouvrez "Realtime Database" dans le menu de gauche → "Créer une base de données" → démarrez en mode test (on verrouillera juste après).<br>
-  3. Ouvrez "Authentication" dans le menu de gauche → "Get started" → onglet "Sign-in method" → activez "Email/Password".<br>
-  4. Toujours dans Authentication, onglet "Users" → "Add user" → créez un compte (email + mot de passe) pour vous, puis un par collègue qui doit avoir accès.<br>
-  5. Retournez dans "Realtime Database" → onglet "Règles", et collez : <code>{"rules": {".read": "auth != null", ".write": "auth != null"}}</code> puis "Publier". Cela empêche tout accès sans identifiants valides.<br>
-  6. Dans les paramètres du projet (⚙️) → "Général" → "Vos applications" → icône Web (&lt;/&gt;) → enregistrez une application, copiez l'objet <code>firebaseConfig</code> et collez-le ci-dessous.</p>
-  <textarea id="configInput" placeholder='{"apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", ...}'></textarea>
-  <button class="btn-add" id="saveConfigBtn">Connecter</button>
-  <div class="err" id="configErr"></div>
-</div>
+
 
 <div class="login-screen" id="loginScreen" style="display:none;">
   <img src="logo.png" alt="Cilyx" />
@@ -452,7 +440,6 @@ function initFirebase(config){
     firebase.initializeApp(config);
     db = firebase.database();
     auth = firebase.auth();
-    document.getElementById('setupScreen').style.display = 'none';
 
     auth.onAuthStateChanged(user => {
       if(user){
@@ -467,7 +454,7 @@ function initFirebase(config){
     });
   }catch(e){
     console.error(e);
-    document.getElementById('configErr').textContent = 'Configuration invalide : ' + e.message;
+    showToast('Erreur de connexion à la base de données');
   }
 }
 
@@ -525,16 +512,6 @@ async function saveLog(){
   try{ await db.ref('log').set(log.slice(0,300)); }
   catch(e){ console.error(e); }
 }
-
-document.getElementById('saveConfigBtn').addEventListener('click', () => {
-  const raw = document.getElementById('configInput').value.trim();
-  document.getElementById('configErr').textContent = '';
-  let config;
-  try{ config = JSON.parse(raw); }
-  catch(e){ document.getElementById('configErr').textContent = "Impossible de lire cette configuration, vérifiez le collage."; return; }
-  try{ localStorage.setItem('inventaire_firebase_config', raw); }catch(e){ /* ignore */ }
-  initFirebase(config);
-});
 
 function addLogEntry(cabinetId, action, productName, delta){
   log.unshift({
@@ -1324,18 +1301,19 @@ document.getElementById('confirmAdd').addEventListener('click', async () => {
 
 document.getElementById('userName').addEventListener('change', saveUserName);
 
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBM_3MXT9ZJ2ahr_NKXLsfbo2AfYnD9xu8",
+  authDomain: "cylix-a79ba.firebaseapp.com",
+  databaseURL: "https://cylix-a79ba-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "cylix-a79ba",
+  storageBucket: "cylix-a79ba.firebasestorage.app",
+  messagingSenderId: "458816136980",
+  appId: "1:458816136980:web:2ee6f9ea574be0cfc90401"
+};
+
 (function init(){
   loadUserName();
-  let saved = null;
-  try{ saved = localStorage.getItem('inventaire_firebase_config'); }catch(e){ /* ignore */ }
-  if(saved){
-    try{
-      const config = JSON.parse(saved);
-      initFirebase(config);
-      return;
-    }catch(e){ /* config corrompue, on retombe sur l'écran de connexion */ }
-  }
-  document.getElementById('setupScreen').style.display = 'block';
+  initFirebase(FIREBASE_CONFIG);
 })();
 
 if('serviceWorker' in navigator){
